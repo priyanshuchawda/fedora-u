@@ -48,9 +48,17 @@ Requires `sudo` for DNF and firmware. Keep the laptop on AC power while firmware
 
 ## What `u` runs
 
-1. `sudo dnf upgrade --refresh --assumeyes`
-2. `flatpak update --assumeyes` (if Flatpak is installed)
-3. `sudo fwupdmgr refresh --force` and `sudo fwupdmgr update --assume-yes` (if available)
+Each step runs only if the tool is installed. Optional steps warn and continue on failure.
+
+1. **Fedora:** `dnf upgrade`, then `dnf autoremove`
+2. **Flatpak:** `flatpak update`, then remove unused runtimes
+3. **Firmware:** `fwupdmgr refresh` + `fwupdmgr update`
+4. **Reboot check:** `needs-restarting -r` (if `dnf-plugin-tr` is installed)
+5. **Snap:** `snap refresh` (if installed)
+6. **Containers:** `podman image prune` / `docker image prune` (if installed)
+7. **Dev tools:** rustup, npm, pnpm, bun, uv, pipx, Flutter, Android SDK (if installed)
+
+AppImages and other manual installs are skipped (no standard updater).
 
 ## Start over locally
 

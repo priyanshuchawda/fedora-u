@@ -1,17 +1,29 @@
 #!/usr/bin/env bash
-# Update Fedora packages, Flatpak applications, and supported device firmware.
+# Update Fedora system packages, Flatpak, firmware, containers, and dev toolchains.
 
 set -Eeuo pipefail
 
-printf '%s\n' 'Updating Fedora packages, Flatpak apps, and firmware…'
+step() {
+    local title=$1
+    shift
+    printf '\n%s\n' "==> ${title}"
+    "$@" || printf 'Warning: %s failed (continuing)\n' "${title}" >&2
+}
+
+printf '%s\n' 'Updating system packages, apps, firmware, containers, and dev tools…'
 printf '%s\n' 'Keep the laptop connected to AC power while firmware is being checked.'
 
 printf '\n%s\n' '==> Fedora packages and kernel drivers'
 sudo dnf upgrade --refresh --assumeyes
 
+step 'Remove unused Fedora packages (autoremove)' \
+    sudo dnf autoremove --assumeyes
+
 if command -v flatpak >/dev/null 2>&1; then
     printf '\n%s\n' '==> Flatpak applications'
     flatpak update --assumeyes
+    step 'Remove unused Flatpak runtimes' \
+        flatpak uninstall --unused --assumeyes
 fi
 
 if command -v fwupdmgr >/dev/null 2>&1; then
@@ -20,5 +32,60 @@ if command -v fwupdmgr >/dev/null 2>&1; then
     sudo fwupdmgr update --assume-yes
 fi
 
+if command -v needs-restarting >/dev/null 2>&1; then
+    printf '\n%s\n' '==> Reboot check'
+    if sudo needs-restarting -r >/dev/null 2>&1; then
+        printf '%s\n' 'No reboot required right now.'
+    else
+        printf '%s\n' 'Reboot recommended to finish pending updates.'
+    fi
+fi
+
+if command -v snap >/dev/null 2>&1; then
+    step 'Snap packages' sudo snap refresh
+fi
+
+if command -v podman >/dev/null 2>&1; then
+    step 'Podman unused images' podman image prune --force
+fi
+
+if command -v docker >/dev/null 2>&1; then
+    step 'Docker unused images' docker image prune --force
+fi
+
+if command -v rustup >/dev/null 2>&1; then
+    step 'Rust toolchains (rustup)' rustup update
+fi
+
+if command -v npm >/dev/null 2>&1; then
+    step 'Global npm packages' npm update -g
+fi
+
+if command -v pnpm >/dev/null 2>&1; then
+    step 'Global pnpm packages' pnpm update -g
+fi
+
+if command -v bun >/dev/null 2>&1; then
+    step 'Bun runtime' bun upgrade
+fi
+
+if command -v uv >/dev/null 2>&1; then
+    step 'uv runtime' uv self update
+    step 'uv tools' uv tool upgrade --all
+fi
+
+if command -v pipx >/dev/null 2>&1; then
+    step 'pipx tools' pipx upgrade-all
+fi
+
+if command -v flutter >/dev/null 2>&1; then
+    step 'Flutter SDK' flutter upgrade --force
+fi
+
+if command -v sdkmanager >/dev/null 2>&1; then
+    step 'Android SDK components' bash -c 'yes | sdkmanager --update'
+fi
+
 printf '\n%s\n' 'Update check complete.'
 printf '%s\n' 'Restart the laptop now if a kernel, driver, or firmware update was installed.'
+printf '%s\n' 'AppImages and manual installs have no unified updater and were not changed.'
