@@ -1,28 +1,39 @@
 #!/usr/bin/env bash
-# Push this repo to GitHub. Run from the repo root.
+# Push local changes to GitHub. Run from repo root: ./push.sh [message]
 
 set -Eeuo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
-REMOTE="${1:-origin}"
-BRANCH="${2:-main}"
+REMOTE="${REMOTE:-origin}"
+BRANCH="${BRANCH:-main}"
+COMMIT_MSG="${1:-Update fedora-u}"
+
+SOURCE_U="${HOME}/.local/bin/u"
+TARGET_U="${REPO_ROOT}/u"
+
+if [[ -f "$SOURCE_U" ]]; then
+  cp "$SOURCE_U" "$TARGET_U"
+fi
+
+chmod +x "${REPO_ROOT}/u" "${REPO_ROOT}/setup.sh" "${REPO_ROOT}/push.sh"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  git init -b "$BRANCH"
+  echo "Not a git repo. Run ./setup.sh first." >&2
+  exit 1
 fi
 
 if ! git remote get-url "$REMOTE" >/dev/null 2>&1; then
-  echo "No remote '$REMOTE'. Create the repo first, then:"
-  echo "  git remote add $REMOTE git@github.com:priyanshuchawda/fedora-u.git"
+  echo "No remote '${REMOTE}'. Run ./setup.sh first." >&2
   exit 1
 fi
 
 git add -A
+
 if ! git diff --cached --quiet; then
-  git commit -m "${3:-Update fedora-u}"
+  git commit -m "$COMMIT_MSG"
 fi
 
 git push -u "$REMOTE" "$BRANCH"
-echo "Pushed to $(git remote get-url "$REMOTE") ($BRANCH)"
+printf '\n%s\n' "Pushed to $(git remote get-url "$REMOTE") (${BRANCH})"

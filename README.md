@@ -1,27 +1,42 @@
 # u — Fedora system update shortcut
 
-One command to update everything on Fedora:
+Typing `u` in the terminal runs a script that updates:
 
 - DNF packages and kernel drivers
 - Flatpak applications
-- Device firmware (via `fwupdmgr`)
+- Device firmware (`fwupdmgr`)
 
-## Install
+Live copy lives at `~/.local/bin/u`. This repo holds the same script plus shell helpers to publish it.
+
+## Repo scripts (run these, not raw git/gh)
+
+| Script | Purpose |
+|--------|---------|
+| `./setup.sh` | First time: copy `u`, `git init`, create GitHub repo, push |
+| `./push.sh` | Later: sync `u` from `~/.local/bin`, commit, push |
+| `./install.sh` | Copy `u` into `~/.local/bin` |
+
+### First push to GitHub
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/priyanshuchawda/fedora-u/main/u -o ~/.local/bin/u
-chmod +x ~/.local/bin/u
+cd ~/fedora-u
+chmod +x setup.sh push.sh install.sh u
+./setup.sh
 ```
 
-Or clone and copy manually:
+### Push changes later
 
 ```bash
-git clone https://github.com/priyanshuchawda/fedora-u.git
-cp fedora-u/u ~/.local/bin/u
-chmod +x ~/.local/bin/u
+cd ~/fedora-u
+./push.sh "describe your change"
 ```
 
-Make sure `~/.local/bin` is on your `PATH`.
+### Install on this machine
+
+```bash
+cd ~/fedora-u
+./install.sh
+```
 
 ## Usage
 
@@ -29,10 +44,18 @@ Make sure `~/.local/bin` is on your `PATH`.
 u
 ```
 
-Requires `sudo` for DNF and firmware updates. Keep the laptop on AC power while firmware is checked.
+Requires `sudo` for DNF and firmware. Keep the laptop on AC power while firmware is checked.
 
-## What it runs
+## What `u` runs
 
 1. `sudo dnf upgrade --refresh --assumeyes`
 2. `flatpak update --assumeyes` (if Flatpak is installed)
-3. `sudo fwupdmgr refresh --force` and `sudo fwupdmgr update --assume-yes` (if `fwupdmgr` is available)
+3. `sudo fwupdmgr refresh --force` and `sudo fwupdmgr update --assume-yes` (if available)
+
+## Start over locally
+
+```bash
+cd ~/fedora-u
+rm -rf .git
+./setup.sh
+```
